@@ -73,11 +73,4 @@ resource "azurerm_linux_virtual_machine" "vm" {
     storage_account_type = "Standard_LRS"
     name                 = "vm-os-disk-${count.index}"
   }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = var.vm_image
-    version   = "latest"
-  }
 }
