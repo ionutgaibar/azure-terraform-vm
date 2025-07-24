@@ -24,5 +24,5 @@ variable "admin_password" {
 
 variable "location" {
   type    = string
-  default = "East US"
+  default = "West Europe"
 }
