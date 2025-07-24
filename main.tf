@@ -7,7 +7,7 @@ variable "subscription_id" {}
 # Variable for the virtual machine name
 variable "vm_username" {
     type        = string
-    default = "iordache09"
+    default = "Curs IBM Azure"
 }
 
 variable "vm_password" {}
@@ -28,7 +28,7 @@ variable "vm_image" {
 }
 
 locals {
-    prefix = "Iordache"
+    prefix = "Curs_IBM_Azure_"
 }
 
 terraform {
