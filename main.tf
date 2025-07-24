@@ -58,6 +58,16 @@ resource "azurerm_linux_virtual_machine" "vm" {
     azurerm_network_interface.nic[count.index].id
   ]
 
+  
+  disable_password_authentication = false
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
