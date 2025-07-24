@@ -32,5 +32,5 @@ jobs:
       run: terraform apply -auto-approve -var-file="terraform.tfvars"
 
     - name: Terraform Destroy (optional)
-      if: false # Schimbă în true dacă vrei să ruleze automat
+      if: true
       run: terraform destroy -auto-approve -var-file="terraform.tfvars"
