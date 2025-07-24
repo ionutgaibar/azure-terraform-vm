@@ -1,73 +1,166 @@
+# This file contains variable definitions for the Terraform configuration.
+variable "client_id" {}
+variable "client_secret" {}
+variable "tenant_id" {}
+variable "subscription_id" {}
+
+# Variable for the virtual machine name
+variable "vm_username" {
+    type        = string
+    default = "iordache09"
+}
+
+variable "vm_password" {}
+
+variable "vm_count" {
+    type    = number
+    default = 2
+}
+
+variable "vm_size" {
+    type    = string
+    default = "Standard_B1s"
+}
+
+variable "vm_image" {
+    type    = string
+    default = "22_04-lts"
+}
+
+locals {
+    prefix = "Iordache"
+}
+
+terraform {
+    required_providers {
+        azurerm = {
+        source  = "hashicorp/azurerm"
+        version = "=3.0.0"
+        }
+    }
+}
+
 provider "azurerm" {
-  features {}
+    features {}
+    client_id       = var.client_id
+    client_secret   = var.client_secret
+    tenant_id       = var.tenant_id
+    subscription_id = var.subscription_id
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "tf-rg"
-  location = var.location
+    name     = "${local.prefix}-resource-group"
+    location = "West Europe"
 }
 
-resource "azurerm_virtual_network" "vnet" {
-  name                = "tf-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+resource "azurerm_virtual_network" "main" {
+    name                = "${local.prefix}-vnet"
+    address_space       = ["10.0.0.0/16"]
+    location            = azurerm_resource_group.rg.location
+    resource_group_name = azurerm_resource_group.rg.name
 }
 
-resource "azurerm_subnet" "subnet" {
-  name                 = "tf-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
+resource "azurerm_subnet" "internal" {
+    name                 = "${local.prefix}-subnet"
+    resource_group_name  = azurerm_resource_group.rg.name
+    virtual_network_name = azurerm_virtual_network.main.name
+    address_prefixes     = ["10.0.2.0/24"]
 }
 
-resource "azurerm_public_ip" "public_ip" {
-  count               = var.vm_count
-  name                = "vm-public-ip-${count.index}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
+resource "azurerm_public_ip" "vm_public_ip" {
+    count               =  var.vm_count
+    name                = "${local.prefix}-public-ip-${count.index}"
+    resource_group_name = azurerm_resource_group.rg.name
+    location            = azurerm_resource_group.rg.location
+    allocation_method   = "Static"
+    sku                 = "Standard"
 }
 
-resource "azurerm_network_interface" "nic" {
-  count               = var.vm_count
-  name                = "vm-nic-${count.index}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+resource "azurerm_network_interface" "main" {
+    count               = var.vm_count
+    name = "${local.prefix}-nic-${count.index}"
+    location            = azurerm_resource_group.rg.location
+    resource_group_name = azurerm_resource_group.rg.name
 
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.public_ip[count.index].id
-  }
+    ip_configuration {
+        name                          = "${local.prefix}-ip-config"
+        subnet_id                     = azurerm_subnet.internal.id
+        private_ip_address_allocation = "Dynamic"
+        public_ip_address_id          = azurerm_public_ip.vm_public_ip[count.index].id
+    }
 }
 
-resource "azurerm_linux_virtual_machine" "vm" {
-  count                 = var.vm_count
-  name                  = "vm-${count.index}"
-  resource_group_name   = azurerm_resource_group.rg.name
-  location              = var.location
-  size                  = var.vm_size
-  admin_username        = var.admin_username
-  admin_password        = var.admin_password
-  disable_password_authentication = false
+resource "azurerm_network_security_group" "vm_allow_ports" {
+    name                = "${local.prefix}-network-security-group"
+    location            = azurerm_resource_group.rg.location
+    resource_group_name = azurerm_resource_group.rg.name
 
-  network_interface_ids = [
-    azurerm_network_interface.nic[count.index].id
-  ]
+security_rule {
+    name                       = "allow_ports_vm"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    }
+}
 
-  source_image_reference {
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+    count                     = var.vm_count
+    network_interface_id      = azurerm_network_interface.main[count.index].id
+    network_security_group_id = azurerm_network_security_group.vm_allow_ports.id
+}
+
+resource "azurerm_virtual_machine" "main" {
+    count                = var.vm_count
+    name                  = "${local.prefix}-linux-vm-${count.index}"
+    location              = azurerm_resource_group.rg.location
+    resource_group_name   = azurerm_resource_group.rg.name
+    network_interface_ids = [azurerm_network_interface.main[count.index].id]
+    vm_size               = var.vm_size
+
+
+delete_os_disk_on_termination = true
+delete_data_disks_on_termination = true
+
+storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "20_04-lts"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = var.vm_image
     version   = "latest"
-  }
+    }
+storage_os_disk {
+    name              = "${local.prefix}-osdisk-${count.index}"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+    }
+os_profile {
+    computer_name  = "${local.prefix}-vm-${count.index}"
+    admin_username = var.vm_username
+    admin_password = var.vm_password
+    }
+os_profile_linux_config {
+    disable_password_authentication = false
+    }
+}
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-    name                 = "vm-os-disk-${count.index}"
-  }
+resource "null_resource" "ping_test" {
+    depends_on = [azurerm_virtual_machine.main]
+
+    provisioner "remote-exec" {
+        connection {
+        type     = "ssh"
+        user     = var.vm_username
+        password = var.vm_password
+        host     = azurerm_public_ip.vm_public_ip[0].ip_address
+        }
+
+        inline = [
+        "ping -c 4 ${azurerm_network_interface.main[1].private_ip_address}"
+        ]
+    }
 }
