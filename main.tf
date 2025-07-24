@@ -7,7 +7,7 @@ variable "subscription_id" {}
 # Variable for the virtual machine name
 variable "vm_username" {
     type        = string
-    default = "Curs IBM Azure"
+    default = "azure"
 }
 
 variable "vm_password" {}
