@@ -1,10 +1,8 @@
-# This file contains variable definitions for the Terraform configuration.
 variable "client_id" {}
 variable "client_secret" {}
 variable "tenant_id" {}
 variable "subscription_id" {}
 
-# Variable for the virtual machine name
 variable "vm_username" {
     type        = string
     default = "azure"
