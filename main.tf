@@ -28,7 +28,7 @@ variable "vm_image" {
 }
 
 locals {
-    prefix = "Curs_IBM_Azure_"
+    prefix = "Curs-IBM-Azure"
 }
 
 terraform {
