@@ -128,8 +128,13 @@ delete_data_disks_on_termination = true
 
 storage_image_reference {
     publisher = "Canonical"
+<<<<<<< HEAD
     offer     = "0001-com-ubuntu-server-jammy"
     sku       = var.vm_image
+=======
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
+>>>>>>> 0d71d22fc44a77a74478df1529fdf9398d5bea06
     version   = "latest"
     }
 storage_os_disk {
