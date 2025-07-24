@@ -1,32 +1,3 @@
-# This file contains variable definitions for the Terraform configuration.
-variable "client_id" {}
-variable "client_secret" {}
-variable "tenant_id" {}
-variable "subscription_id" {}
-
-# Variable for the virtual machine name
-variable "vm_username" {
-    type        = string
-    default = "iordache09"
-}
-
-variable "vm_password" {}
-
-variable "vm_count" {
-    type    = number
-    default = 2
-}
-
-variable "vm_size" {
-    type    = string
-    default = "Standard_B1s"
-}
-
-variable "vm_image" {
-    type    = string
-    default = "22_04-lts"
-}
-
 locals {
     prefix = "Iordache"
 }
@@ -128,13 +99,8 @@ delete_data_disks_on_termination = true
 
 storage_image_reference {
     publisher = "Canonical"
-<<<<<<< HEAD
     offer     = "0001-com-ubuntu-server-jammy"
     sku       = var.vm_image
-=======
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
->>>>>>> 0d71d22fc44a77a74478df1529fdf9398d5bea06
     version   = "latest"
     }
 storage_os_disk {
@@ -169,3 +135,6 @@ resource "null_resource" "ping_test" {
         ]
     }
 }
+
+
+
